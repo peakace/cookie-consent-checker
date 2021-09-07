@@ -1,4 +1,12 @@
-﻿___INFO___
+___TERMS_OF_SERVICE___
+
+By creating or modifying this file you agree to Google Tag Manager's Community
+Template Gallery Developer Terms of Service available at
+https://developers.google.com/tag-manager/gallery-tos (or such other URL as
+Google may provide), as modified from time to time.
+
+
+___INFO___
 
 {
   "type": "TAG",
@@ -22,6 +30,19 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
+    "type": "CHECKBOX",
+    "name": "gcloud_function",
+    "checkboxText": "Activate for Google Cloud Function",
+    "simpleValueType": true
+  },
+  {
+    "type": "CHECKBOX",
+    "name": "sgtm",
+    "checkboxText": "Activate for Server Side Tag Manager",
+    "simpleValueType": true,
+    "help": "To use the Cookie Consent Checker with the Server Side Tag Manager a new table must be created in the Big Query with the following fields scheme. (eventName, cookieValue, url, bannerVersion, channel, source_campaign, source_content, source_term, agent, deviceType, browser, os, isBot, botName, language) as STRING and (timestamp) as TIMESTAMP. If custom parameters are also sent, they must also be added to the table."
+  },
+  {
     "type": "TEXT",
     "name": "endPoint",
     "displayName": "Cloud Function URL",
@@ -37,6 +58,39 @@ ___TEMPLATE_PARAMETERS___
         "args": [
           "^https://.+"
         ]
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "gcloud_function",
+        "paramValue": true,
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "TEXT",
+    "name": "sgtm_endpoint",
+    "displayName": "Server Side URL",
+    "simpleValueType": true,
+    "valueHint": "https://meine_sgtm_url.ew.r.appspot.com",
+    "alwaysInSummary": true,
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      },
+      {
+        "type": "REGEX",
+        "args": [
+          "^https://.+"
+        ]
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "sgtm",
+        "paramValue": true,
+        "type": "EQUALS"
       }
     ]
   },
@@ -208,9 +262,14 @@ ___TEMPLATE_PARAMETERS___
             "paramName": "UserInfoTrue",
             "paramValue": true,
             "type": "EQUALS"
+          },
+          {
+            "paramName": "sgtm",
+            "paramValue": true,
+            "type": "NOT_EQUALS"
           }
         ],
-        "help": "If you enable bot traffic, this tag will already be searched for bot traffic and passed to the big query. You can also filter out the bot traffic yourself with the user agent in the big query."
+        "help": "If you enable bot traffic, this tag will already be searched for bot traffic and passed to the big query. You can also filter out the bot traffic yourself with the user agent in the big query. The activation here applies only to Google Cloud Function. Bot traffic tracking for the server side tag manager can be enabled in the client with more options."
       }
     ]
   },
@@ -352,9 +411,15 @@ const eventTimestamp = getTimestamp();
 const consentCookie = !!(getCookieValues(data.cookieConsentName, true)[0]);
 const fullUrl = getUrl().toString();
 const fullReferrer = getReferrerUrl('host').toString();
-const endPoint = data.endPoint;
+let endPoint = "";
 const clickText = data.clickText;
 
+if (data.gcloud_function){
+   endPoint = data.endPoint;
+  } else if (data.sgtm){
+   endPoint = data.sgtm_endpoint + '/ccc';  
+  }
+log(endPoint);
 
 let userAgent = "";
 let source_medium = '';
